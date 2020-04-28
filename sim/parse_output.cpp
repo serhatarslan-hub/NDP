@@ -81,6 +81,7 @@ int main(int argc, char** argv){
 
 	      if (strstr(line, "# numrecords=")) {
 	          numRecords = atoi(line+13);
+            printf("Numrecords is %d after preamble\n", numRecords);
 	      };
 
 	      if (strstr(line, "# transpose=")) {
@@ -175,8 +176,8 @@ int main(int argc, char** argv){
     }
 
     for (int i=0;i<numRecords;i++){
-	      if (!timeRec[i])
-	          continue;
+	      // if (!timeRec[i])
+	      //     continue;
 
 	      if (ascii) {
       	    RawLogEvent event(timeRec[i], typeRec[i], idRec[i], evRec[i],

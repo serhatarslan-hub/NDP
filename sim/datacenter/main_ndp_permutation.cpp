@@ -73,7 +73,8 @@ void print_path(std::ofstream &paths, const Route* rt){
 
 int main(int argc, char **argv) {
     Packet::set_packet_size(64);
-    eventlist.setEndtime(timeFromSec(0.201));
+    // eventlist.setEndtime(timeFromSec(0.201));
+    eventlist.setEndtime(timeFromSec(0.004));
     Clock c(timeFromSec(5 / 100.), eventlist);
     int no_of_conns = DEFAULT_NODES, cwnd = 15, no_of_nodes = DEFAULT_NODES;
     mem_b queuesize = memFromPkt(DEFAULT_QUEUE_SIZE);
@@ -280,9 +281,11 @@ int main(int argc, char **argv) {
                 it_sub = crt_subflow_count > net_paths[src][dest]->size()?net_paths[src][dest]->size():crt_subflow_count;
 
                 ndpSrc = new NdpSrc(NULL, NULL, eventlist);
+                ndpSrc->log_me();
                 ndpSrc->setCwnd(cwnd*Packet::data_packet_size());
                 ndp_srcs.push_back(ndpSrc);
                 ndpSnk = new NdpSink(eventlist, 1 /*pull at line rate*/);
+                ndpSnk->log_me();
 
                 ndpSrc->setName("ndp_" + ntoa(src) + "_" + ntoa(dest)+"("+ntoa(connection)+")");
                 logfile.writeName(*ndpSrc);
@@ -391,9 +394,9 @@ int main(int argc, char **argv) {
                         PacketSink* first_queue = rt->at(0);
                         if (ndpSrc->_log_me) {
                             cout << "First hop: " << first_queue->nodename() << endl;
-                            QueueLoggerSimple queue_logger = QueueLoggerSimple();
-                            logfile.addLogger(queue_logger);
-                            ((Queue*)first_queue)->setLogger(&queue_logger);
+                            // QueueLoggerSimple queue_logger = QueueLoggerSimple();
+                            // logfile.addLogger(queue_logger);
+                            // ((Queue*)first_queue)->setLogger(&queue_logger);
 
                             ndpSrc->set_traffic_logger(&traffic_logger);
                         }
