@@ -1,4 +1,4 @@
-// -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-    
+// -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
 #include <math.h>
 #include <iostream>
 #include "ndp.h"
@@ -74,7 +74,7 @@ NdpSrc::NdpSrc(NdpLogger* logger, TrafficLogger* pktlogger, EventList &eventlist
     _flow_size = ((uint64_t)1)<<63;
     _last_pull = 0;
     _pull_window = 0;
-  
+
     _crt_path = 0; // used for SCATTER_PERMUTE route strategy
 
     _feedback_count = 0;
@@ -97,11 +97,11 @@ void NdpSrc::set_traffic_logger(TrafficLogger* pktlogger) {
 void NdpSrc::log_me() {
     // avoid looping
     if (_log_me == true)
-	return;
+	    return;
     cout << "Enabling logging on NdpSrc " << _nodename << endl;
     _log_me = true;
     if (_sink)
-	_sink->log_me();
+	    _sink->log_me();
 }
 
 void NdpSrc::set_paths(vector<const Route*>* rt_list){
@@ -109,77 +109,77 @@ void NdpSrc::set_paths(vector<const Route*>* rt_list){
     switch(_route_strategy) {
     case NOT_SET:
     case SINGLE_PATH:
-	// shouldn't call this with these strategies
-	abort();
+      	// shouldn't call this with these strategies
+      	abort();
     case SCATTER_PERMUTE:
     case SCATTER_RANDOM:
     case PULL_BASED:
-	_paths.resize(no_of_paths);
+  	    _paths.resize(no_of_paths);
         _original_paths.resize(no_of_paths);
         _path_acks.resize(no_of_paths);
         _path_nacks.resize(no_of_paths);
         _bad_path.resize(no_of_paths);
         _avoid_ratio.resize(no_of_paths);
         _avoid_score.resize(no_of_paths);
-	_path_counts_new.resize(no_of_paths);
-	_path_counts_rtx.resize(no_of_paths);
-	_path_counts_rto.resize(no_of_paths);
+      	_path_counts_new.resize(no_of_paths);
+      	_path_counts_rtx.resize(no_of_paths);
+      	_path_counts_rto.resize(no_of_paths);
 
-	for (unsigned int i=0; i < no_of_paths; i++){
-	    Route* tmp = new Route(*(rt_list->at(i)));
-	    tmp->add_endpoints(this, _sink);
-	    tmp->set_path_id(i, rt_list->size());
-	    _paths[i] = tmp;
-	    _original_paths[i] = tmp;
-	    _path_counts_new[i] = 0;
-	    _path_counts_rtx[i] = 0;
-	    _path_counts_rto[i] = 0;
-	    _path_acks[i] = 0;
-	    _path_nacks[i] = 0;
-	    _avoid_ratio[i] = 0;
-	    _avoid_score[i] = 0;
-	    _bad_path[i] = false;
-	}
+      	for (unsigned int i=0; i < no_of_paths; i++){
+      	    Route* tmp = new Route(*(rt_list->at(i)));
+      	    tmp->add_endpoints(this, _sink);
+      	    tmp->set_path_id(i, rt_list->size());
+      	    _paths[i] = tmp;
+      	    _original_paths[i] = tmp;
+      	    _path_counts_new[i] = 0;
+      	    _path_counts_rtx[i] = 0;
+      	    _path_counts_rto[i] = 0;
+      	    _path_acks[i] = 0;
+      	    _path_nacks[i] = 0;
+      	    _avoid_ratio[i] = 0;
+      	    _avoid_score[i] = 0;
+      	    _bad_path[i] = false;
+      	}
 
-	_crt_path = 0;
-	permute_paths();
-	break;
+      	_crt_path = 0;
+      	permute_paths();
+      	break;
     }
 }
 
 void NdpSrc::startflow(){
     _highest_sent = 0;
     _last_acked = 0;
-    
+
     _acked_packets = 0;
     _packets_sent = 0;
     _rtx_timeout_pending = false;
     _rtx_timeout = timeInf;
     _pull_window = 0;
-    
+
     _flight_size = 0;
     _first_window_count = 0;
     while (_flight_size < _cwnd && _flight_size < _flow_size) {
-	send_packet(0);
-	_first_window_count++;
+      	send_packet(0);
+      	_first_window_count++;
     }
 }
 
 void NdpSrc::connect(Route& routeout, Route& routeback, NdpSink& sink, simtime_picosec starttime) {
     _route = &routeout;
     assert(_route);
-    
+
     _sink = &sink;
     _flow.id = id; // identify the packet flow with the NDP source that generated it
     _flow._name = _name;
     _sink->connect(*this, routeback);
-  
+
     eventlist().sourceIsPending(*this,starttime);
 
     //debugging hacks
     if (sink.get_id()==LOGSINK) {
-	cout << "Found source for " << LOGSINK << "\n";
-	_log_me = true;
+      	cout << "Found source for " << LOGSINK << "\n";
+      	_log_me = true;
     }
 }
 
@@ -187,7 +187,7 @@ void NdpSrc::connect(Route& routeout, Route& routeback, NdpSink& sink, simtime_p
 
 void NdpSrc::count_feedback(int32_t path_id, FeedbackType fb) {
     if (_route_strategy == SINGLE_PATH)
-	return;
+	      return;
 
     int32_t sz = _paths.size();
     // keep feedback history in a circular buffer
@@ -195,46 +195,46 @@ void NdpSrc::count_feedback(int32_t path_id, FeedbackType fb) {
     _feedback_count = (_feedback_count + 1) % HIST_LEN;
     switch (fb) {
     case ACK:
-	_path_acks[path_id]++;
-	break;
+    	_path_acks[path_id]++;
+    	break;
     case NACK:
-	_path_nacks[path_id]++;
-	break;
+    	_path_nacks[path_id]++;
+    	break;
     case BOUNCE:
-	_path_nacks[path_id]+=3;  //a bounce is kind of a more severe Nack for this purpose
-	break;
+    	_path_nacks[path_id]+=3;  //a bounce is kind of a more severe Nack for this purpose
+    	break;
     case UNKNOWN:
-	//not possible, but keep compiler calm
-	abort();
+    	//not possible, but keep compiler calm
+    	abort();
     }
     int path_acks_total = 0;
     int path_nacks_total = 0;
     for (int i = 0; i < sz; i++) {
-	path_acks_total += _path_acks[i];
-	path_nacks_total += _path_nacks[i];
+      	path_acks_total += _path_acks[i];
+      	path_nacks_total += _path_nacks[i];
     }
     int path_acks_mean = path_acks_total / sz;
     int path_nacks_mean = path_nacks_total / sz;
 
-    int nack_ratio = 0; 
+    int nack_ratio = 0;
     if (_path_acks[path_id] > 10)
-	nack_ratio = (_path_nacks[path_id]*100)/_path_acks[path_id];
+	      nack_ratio = (_path_nacks[path_id]*100)/_path_acks[path_id];
     int mean_nack_ratio = 100;
-    if (path_acks_mean > 0) 
-	mean_nack_ratio = (path_nacks_mean*100)/path_acks_mean;
+    if (path_acks_mean > 0)
+	      mean_nack_ratio = (path_nacks_mean*100)/path_acks_mean;
     // criteria for a bad path.
     // 1.  nack count > 125% of the mean nack count
     // 2.  nack ratio > 30%
     // 3.  total acks+nacks > 100, so we don't react to noisy startup data
     if ((_path_acks[path_id] + _path_nacks[path_id] > 100) &&
-	(nack_ratio > mean_nack_ratio*1.25) &&
-	(nack_ratio > 30)) {
-	_bad_path[path_id] = true;
-	_avoid_ratio[path_id]++;
+      	(nack_ratio > mean_nack_ratio*1.25) &&
+      	(nack_ratio > 30)) {
+      	_bad_path[path_id] = true;
+      	_avoid_ratio[path_id]++;
     } else {
-	if (_avoid_ratio[path_id] > 0)
-	    _avoid_ratio[path_id]--;
-	_bad_path[path_id] = false;
+      	if (_avoid_ratio[path_id] > 0)
+      	    _avoid_ratio[path_id]--;
+      	_bad_path[path_id] = false;
     }
 }
 
@@ -244,19 +244,19 @@ bool NdpSrc::is_bad_path() {
     // is.  Look at the immediate history to tell the difference.
     int bounce_count = 0, ack_count = 0, nack_count = 0, total = 0;
     for (int i=0; i< HIST_LEN; i++) {
-	switch (_feedback_history[i]) {
-	case ACK:
-	    ack_count++;
-	    break;
-	case NACK:
-	    nack_count++;
-	    break;
-	case BOUNCE:
-	    bounce_count++;
-	    break;
-	case UNKNOWN:
-	    break;
-	}
+	      switch (_feedback_history[i]) {
+          	case ACK:
+          	    ack_count++;
+          	    break;
+          	case NACK:
+          	    nack_count++;
+          	    break;
+          	case BOUNCE:
+          	    bounce_count++;
+          	    break;
+          	case UNKNOWN:
+          	    break;
+	      }
     }
     total = ack_count + nack_count + bounce_count;
     // If we get a return-to-sender due to incast, all the paths
@@ -268,8 +268,8 @@ bool NdpSrc::is_bad_path() {
     // really congested on aggregate, so this is likely just a bad
     // path.
     if (ack_count > 0 && total/ack_count <= 3) {
-	printf("total: %d ack: %d nack:%d rts: %d, BAD\n", total, ack_count, nack_count, bounce_count);
-	return true;
+      	printf("total: %d ack: %d nack:%d rts: %d, BAD\n", total, ack_count, nack_count, bounce_count);
+      	return true;
     }
     printf("total: %d ack: %d nack:%d rts: %d, NOT BAD\n", total, ack_count, nack_count, bounce_count);
     return false;
@@ -279,12 +279,12 @@ bool NdpSrc::is_bad_path() {
 void NdpSrc::processRTS(NdpPacket& pkt){
     assert(pkt.bounced());
     pkt.unbounce(ACKSIZE + _mss);
-    
+
     _sent_times.erase(pkt.seqno());
     //resend from front of RTX
     //queue on any other path than the one we tried last time
     pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_CREATE);
-    _rtx_queue.push_front(&pkt); 
+    _rtx_queue.push_front(&pkt);
 
     count_bounce(pkt.route()->path_id());
 
@@ -299,21 +299,21 @@ void NdpSrc::processRTS(NdpPacket& pkt){
 #define SWALLOW
 #ifdef SWALLOW
     if ((_pull_window == 0 && _first_window_count <= 1) || is_bad_path()) {
-	//Only immediately resend if we're not expecting any more
-	//pulls, or we believe this was a bad path.  Otherwise wait
-	//for a pull.  Waiting reduces the effective window by one.
-	send_packet(0);
-	if (_log_me) {
-	    printf("bounce send pw=%d\n", _pull_window);
-	} else {
-	    //printf("bounce send\n");
-	}
+      	//Only immediately resend if we're not expecting any more
+      	//pulls, or we believe this was a bad path.  Otherwise wait
+      	//for a pull.  Waiting reduces the effective window by one.
+    	  send_packet(0);
+      	if (_log_me) {
+      	    printf("bounce send pw=%d\n", _pull_window);
+      	} else {
+      	    //printf("bounce send\n");
+      	}
     } else {
-	if (_log_me) {
-	    printf("bounce swallow pw=%d\n", _pull_window);
-	} else {
-	    //printf("bounce swallow\n");
-	}
+      	if (_log_me) {
+      	    printf("bounce swallow pw=%d\n", _pull_window);
+      	} else {
+      	    //printf("bounce swallow\n");
+      	}
     }
 #else
     send_packet(0);
@@ -327,13 +327,13 @@ void NdpSrc::processRTS(NdpPacket& pkt){
    resend immediately */
 void NdpSrc::processNack(const NdpNack& nack){
     NdpPacket* p;
-/*
-    if (nack.pull())
-	printf("Receive NACK (pull)\n");
-    else
-	printf("Receive NACK (----)\n");
-*/
-    
+    /*
+        if (nack.pull())
+    	printf("Receive NACK (pull)\n");
+        else
+    	printf("Receive NACK (----)\n");
+    */
+
     bool last_packet = (nack.ackno() + _mss - 1) >= _flow_size;
     _sent_times.erase(nack.ackno());
 
@@ -341,13 +341,13 @@ void NdpSrc::processNack(const NdpNack& nack){
 
     p = NdpPacket::newpkt(_flow, *_route, nack.ackno(), 0, _mss, true,
 			  _paths.size()>0?_paths.size():1, last_packet);
-    
+
     // need to add packet to rtx queue
     p->flow().logTraffic(*p,*this,TrafficLogger::PKT_CREATE);
     _rtx_queue.push_back(p);
     if (nack.pull()) {
-	_implicit_pulls++;
-	pull_packets(nack.pullno(), nack.pacerno());
+      	_implicit_pulls++;
+      	pull_packets(nack.pullno(), nack.pacerno());
     }
 }
 
@@ -360,9 +360,9 @@ void NdpSrc::processAck(const NdpAck& ack) {
     NdpAck::seq_t cum_ackno = ack.cumulative_ack();
     bool pull = ack.pull();
     if (pull) {
-	if (_log_me)
-	    cout << "PULLACK\n";
-	_pull_window--;
+      	if (_log_me)
+      	    cout << "PULLACK\n";
+      	_pull_window--;
     }
     simtime_picosec ts = ack.ts();
     int32_t path_id = ack.path_id();
@@ -378,40 +378,40 @@ void NdpSrc::processAck(const NdpAck& ack) {
     _sent_times.erase(ackno);
 
     count_ack(path_id);
-  
+
     // Compute rtt.  This comes originally from TCP, and may not be optimal for NDP */
     uint64_t m = eventlist().now()-ts;
 
     if (m!=0){
-	if (_rtt>0){
-	    uint64_t abs;
-	    if (m>_rtt)
-		abs = m - _rtt;
-	    else
-		abs = _rtt - m;
+	      if (_rtt>0){
+      	    uint64_t abs;
+      	    if (m>_rtt)
+      		      abs = m - _rtt;
+      	    else
+      		      abs = _rtt - m;
 
-	    _mdev = 3 * _mdev / 4 + abs/4;
-	    _rtt = 7*_rtt/8 + m/8;
+      	    _mdev = 3 * _mdev / 4 + abs/4;
+      	    _rtt = 7*_rtt/8 + m/8;
 
-	    _rto = _rtt + 4*_mdev;
-	} else {
-	    _rtt = m;
-	    _mdev = m/2;
+	          _rto = _rtt + 4*_mdev;
+	      } else {
+      	    _rtt = m;
+      	    _mdev = m/2;
 
-	    _rto = _rtt + 4*_mdev;
-	}
-	if (_base_rtt==timeInf || _base_rtt > m)
-	    _base_rtt = m;
+      	    _rto = _rtt + 4*_mdev;
+	      }
+      	if (_base_rtt==timeInf || _base_rtt > m)
+      	    _base_rtt = m;
     }
 
     if (_rto < _min_rto)
-	_rto = _min_rto * ((drand() * 0.5) + 0.75);
+	      _rto = _min_rto * ((drand() * 0.5) + 0.75);
 
-    if (cum_ackno > _last_acked) { // a brand new ack    
-	// we should probably cancel the rtx timer for any acked by
-	// the cumulative ack, but we'll get an ACK or NACK anyway in
-	// due course.
-	_last_acked = cum_ackno;
+    if (cum_ackno > _last_acked) { // a brand new ack
+      	// we should probably cancel the rtx timer for any acked by
+      	// the cumulative ack, but we'll get an ACK or NACK anyway in
+      	// due course.
+      	_last_acked = cum_ackno;
 
     }
     if (_logger) _logger->logNdp(*this, NdpLogger::NDP_RCV);
@@ -420,76 +420,76 @@ void NdpSrc::processAck(const NdpAck& ack) {
     assert(_flight_size>=0);
 
     if (cum_ackno >= _flow_size){
-	cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
+	      cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
     }
 
     update_rtx_time();
 
     /* if the PULL bit is set, send some new data packets */
     if (pull) {
-	_implicit_pulls++;
-	pull_packets(pullno, pacerno);
+      	_implicit_pulls++;
+      	pull_packets(pullno, pacerno);
     }
 }
 
-void NdpSrc::receivePacket(Packet& pkt) 
+void NdpSrc::receivePacket(Packet& pkt)
 {
     pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_RCVDESTROY);
 
     switch (pkt.type()) {
-    case NDP:
-	{
-	    _bounces_received++;
-	    _first_window_count--;
-	    processRTS((NdpPacket&)pkt);
-	    return;
-	}
-    case NDPNACK: 
-	{
-	    _nacks_received++;
-	    _pull_window++;
-	    _first_window_count--;
-	    /*if (_log_me) {
-		printf("NACK, pw=%d\n", _pull_window);
-	    } else {
-		printf("NACK\n");
-	    }*/
-	    processNack((const NdpNack&)pkt);
-	    pkt.free();
-	    return;
-	} 
-    case NDPPULL: 
-	{
-	    _pulls_received++;
-	    _pull_window--;
-	    if (_log_me) {
-		printf("PULL, pw=%d\n", _pull_window);
-	    }
-	    NdpPull *p = (NdpPull*)(&pkt);
-	    NdpPull::seq_t cum_ackno = p->cumulative_ack();
-	    if (cum_ackno > _last_acked) { // a brand new ack    
-		// we should probably cancel the rtx timer for any acked by
-		// the cumulative ack, but we'll get an ACK or NACK anyway in
-		// due course.
-		_last_acked = cum_ackno;
-	  
-	    }
-	    //printf("Receive PULL: %s\n", p->pull_bitmap().to_string().c_str());
-	    pull_packets(p->pullno(), p->pacerno());
-	    return;
-	}
-    case NDPACK:
-	{
-	    _acks_received++;
-	    _pull_window++;
-	    _first_window_count--;
-	    //	    if (_log_me) {
-	    //	printf("ACK, pw=%d\n", _pull_window);
-	    //}
-	    processAck((const NdpAck&)pkt);
-	    pkt.free();
-	    return;
-	}
+        case NDP:
+	      {
+      	    _bounces_received++;
+      	    _first_window_count--;
+      	    processRTS((NdpPacket&)pkt);
+      	    return;
+	      }
+        case NDPNACK:
+	      {
+      	    _nacks_received++;
+      	    _pull_window++;
+      	    _first_window_count--;
+      	    /*if (_log_me) {
+      		printf("NACK, pw=%d\n", _pull_window);
+      	    } else {
+      		printf("NACK\n");
+      	    }*/
+      	    processNack((const NdpNack&)pkt);
+      	    pkt.free();
+      	    return;
+	      }
+        case NDPPULL:
+	      {
+      	    _pulls_received++;
+      	    _pull_window--;
+      	    if (_log_me) {
+      		      printf("PULL, pw=%d\n", _pull_window);
+      	    }
+      	    NdpPull *p = (NdpPull*)(&pkt);
+      	    NdpPull::seq_t cum_ackno = p->cumulative_ack();
+      	    if (cum_ackno > _last_acked) { // a brand new ack
+            		// we should probably cancel the rtx timer for any acked by
+            		// the cumulative ack, but we'll get an ACK or NACK anyway in
+            		// due course.
+            		_last_acked = cum_ackno;
+
+  	        }
+      	    //printf("Receive PULL: %s\n", p->pull_bitmap().to_string().c_str());
+      	    pull_packets(p->pullno(), p->pacerno());
+      	    return;
+	      }
+        case NDPACK:
+	      {
+      	    _acks_received++;
+      	    _pull_window++;
+      	    _first_window_count--;
+      	    //	    if (_log_me) {
+      	    //	printf("ACK, pw=%d\n", _pull_window);
+      	    //}
+      	    processAck((const NdpAck&)pkt);
+      	    pkt.free();
+      	    return;
+	      }
     }
 }
 
@@ -553,7 +553,7 @@ const Route* NdpSrc::choose_route() {
 	return _route;
     case NOT_SET:
 	abort();  // shouldn't be here at all
-    }	
+    }
 
     rt = _paths.at(_crt_path);
     return rt;
@@ -564,8 +564,8 @@ void NdpSrc::pull_packets(NdpPull::seq_t pull_no, NdpPull::seq_t pacer_no) {
     // reduce reverse-path RTT - if one pull is delayed on one path, a
     // pull that gets there faster on another path can supercede it
     while (_last_pull < pull_no) {
-	send_packet(pacer_no);
-	_last_pull++;
+      	send_packet(pacer_no);
+      	_last_pull++;
     }
 }
 
@@ -597,7 +597,7 @@ void NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
 	//have the feeder queue update the sent time, because the
 	//feeder queue isn't a FIFO but that would be hard to
 	//implement in a real system, so this is a rough proxy.
-	uint32_t service_time = q->serviceTime(*p);  
+	uint32_t service_time = q->serviceTime(*p);
 	_sent_times[p->seqno()] = eventlist().now() + service_time;
 	_packets_sent ++;
 	_rtx_packets_sent++;
@@ -614,7 +614,7 @@ void NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
 		/* xxx should really make the last packet sent be the right size
 		 * if _flow_size is not a multiple of _mss */
 		return;
-	    } 
+	    }
 	    if (_highest_sent + _mss >= _flow_size) {
 		last_packet = true;
 	    }
@@ -646,7 +646,7 @@ void NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
 	}
 	p->flow().logTraffic(*p,*this,TrafficLogger::PKT_CREATESEND);
 	p->set_ts(eventlist().now());
-    
+
 	_flight_size += _mss;
 	// 	if (_log_me) {
 	// 	    cout << "Sent " << _highest_sent+1 << " FSz: " << _flight_size << endl;
@@ -664,7 +664,7 @@ void NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
 	//have the feeder queue update the sent time, because the
 	//feeder queue isn't a FIFO but that would be hard to
 	//implement in a real system, so this is a rough proxy.
-	uint32_t service_time = q->serviceTime(*p);  
+	uint32_t service_time = q->serviceTime(*p);
 	//cout << "service_time2: " << service_time << endl;
 	_sent_times[p->seqno()] = eventlist().now() + service_time;
 	_first_sent_times[p->seqno()] = eventlist().now();
@@ -685,7 +685,7 @@ void NdpSrc::permute_paths() {
     }
 }
 
-void 
+void
 NdpSrc::update_rtx_time() {
     //simtime_picosec now = eventlist().now();
     if (_sent_times.empty()) {
@@ -704,8 +704,8 @@ NdpSrc::update_rtx_time() {
     }
     _rtx_timeout = first_senttime + _rto;
 }
- 
-void 
+
+void
 NdpSrc::process_cumulative_ack(NdpPacket::seq_t cum_ackno) {
     map<NdpPacket::seq_t, simtime_picosec>::iterator i, i_next;
     i = _sent_times.begin();
@@ -722,7 +722,7 @@ NdpSrc::process_cumulative_ack(NdpPacket::seq_t cum_ackno) {
     //need to call update_rtx_time right after this!
 }
 
-void 
+void
 NdpSrc::retransmit_packet() {
     //cout << "starting retransmit_packet\n";
     NdpPacket* p;
@@ -761,7 +761,7 @@ NdpSrc::retransmit_packet() {
 		_crt_path = random() % _paths.size();
 	    } else {
 		_crt_path++;
-		if (_crt_path==_paths.size()){ 
+		if (_crt_path==_paths.size()){
 		    permute_paths();
 		    _crt_path = 0;
 		}
@@ -775,7 +775,7 @@ NdpSrc::retransmit_packet() {
 	case NOT_SET:
 	    abort();
 	}
-	
+
 	p->flow().logTraffic(*p,*this,TrafficLogger::PKT_CREATESEND);
 	p->set_ts(eventlist().now());
 	//_sent_times[seqno] = eventlist().now();
@@ -816,7 +816,7 @@ void NdpSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
     if(!_rtx_timeout_pending) {
 	_rtx_timeout_pending = true;
 
-	
+
 	// check the timer difference between the event and the real value
 	simtime_picosec too_early = _rtx_timeout - now;
 	if (now > _rtx_timeout) {
@@ -830,7 +830,7 @@ void NdpSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
 
 void NdpSrc::log_rtt(simtime_picosec sent_time) {
     int64_t rtt = eventlist().now() - sent_time;
-    if (rtt >= 0) 
+    if (rtt >= 0)
 	_rtt_hist[(int)timeAsUs(rtt)]++;
     else
 	cout << "Negative RTT: " << rtt << endl;
@@ -839,7 +839,7 @@ void NdpSrc::log_rtt(simtime_picosec sent_time) {
 void NdpSrc::doNextEvent() {
     if (_rtx_timeout_pending) {
 	_rtx_timeout_pending = false;
-    
+
 	if (_logger) _logger->logNdp(*this, NdpLogger::NDP_TIMEOUT);
 
 	retransmit_packet();
@@ -868,12 +868,12 @@ void NdpSrc::print_stats() {
 
 /* Only use this constructor when there is only one for to this receiver */
 NdpSink::NdpSink(EventList& event, double pull_rate_modifier)
-    : Logged("ndp_sink"),_cumulative_ack(0) , _total_received(0) 
+    : Logged("ndp_sink"),_cumulative_ack(0) , _total_received(0)
 {
     _src = 0;
     _pacer = new NdpPullPacer(event, pull_rate_modifier);
     //_pacer = new NdpPullPacer(event, "/Users/localadmin/poli/new-datacenter-protocol/data/1500.recv.cdf.pretty");
-    
+
     _nodename = "ndpsink";
     _pull_no = 0;
     _last_packet_seqno = 0;
@@ -894,7 +894,7 @@ NdpSink::NdpSink(EventList& event, double pull_rate_modifier)
 /* Use this constructor when there are multiple flows to one receiver
    - all the flows to one receiver need to share the same
    NdpPullPacer */
-NdpSink::NdpSink(NdpPullPacer* pacer) : Logged("ndp_sink"),_cumulative_ack(0) , _total_received(0) 
+NdpSink::NdpSink(NdpPullPacer* pacer) : Logged("ndp_sink"),_cumulative_ack(0) , _total_received(0)
 {
     _src = 0;
     _pacer = pacer;
@@ -924,7 +924,7 @@ void NdpSink::log_me() {
     if (_src)
 	_src->log_me();
     _pacer->log_me();
-    
+
 }
 
 /* Connect a src to this sink.  We normally won't use this route if
@@ -943,7 +943,7 @@ void NdpSink::connect(NdpSrc& src, Route& route)
 	_route = NULL;
 	break;
     }
-	
+
     _cumulative_ack = 0;
     _drops = 0;
 
@@ -991,9 +991,9 @@ void NdpSink::receivePacket(Packet& pkt) {
 	/*
 	if (_log_me) {
 	    cout << "Recv " << seqno;
-	    if (pkt.header_only()) 
+	    if (pkt.header_only())
 		cout << " (hdr)";
-	    else 
+	    else
 		cout << " (full)";
 	    cout << endl;
 	}
@@ -1008,11 +1008,11 @@ void NdpSink::receivePacket(Packet& pkt) {
 	p->free();
 	return;
     }
-	
+
 
     update_path_history(*p);
     if (pkt.header_only()){
-	send_nack(ts,((NdpPacket*)&pkt)->seqno(), pacer_no);	  
+	send_nack(ts,((NdpPacket*)&pkt)->seqno(), pacer_no);
 	pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_RCVDESTROY);
 #ifdef RECORD_PATH_LENS
 	_trimmed_path_lens[pkt.path_len()]++;
@@ -1035,7 +1035,7 @@ void NdpSink::receivePacket(Packet& pkt) {
 
     pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_RCVDESTROY);
     p->free();
-  
+
     _total_received+=size;
 
     if (seqno == _cumulative_ack+1) { // it's the next expected seq no
@@ -1054,7 +1054,7 @@ void NdpSink::receivePacket(Packet& pkt) {
 	    _drops += (size + seqno-_cumulative_ack-1)/size;
 	} else if (seqno > _received.back()) { // likely case
 	    _received.push_back(seqno);
-	} 
+	}
 	else { // uncommon case - it fills a hole
 	    list<uint64_t>::iterator i;
 	    for (i = _received.begin(); i != _received.end(); i++) {
@@ -1099,14 +1099,14 @@ void NdpSink::update_path_history(const NdpPacket& p) {
 void NdpSink::send_ack(simtime_picosec ts, NdpPacket::seq_t ackno, NdpPacket::seq_t pacer_no) {
     NdpAck *ack;
     _pull_no++;
-    
+
     switch (_route_strategy) {
     case SCATTER_PERMUTE:
     case SCATTER_RANDOM:
     case PULL_BASED:
 	assert(_paths.size() > 0);
-	ack = NdpAck::newpkt(_src->_flow, *(_paths.at(_crt_path)), 0, ackno, 
-			     _cumulative_ack, _pull_no, 
+	ack = NdpAck::newpkt(_src->_flow, *(_paths.at(_crt_path)), 0, ackno,
+			     _cumulative_ack, _pull_no,
 			     _path_history[_path_hist_index].path_id());
 	if (_route_strategy == SCATTER_RANDOM) {
 	    _crt_path = random()%_paths.size();
@@ -1118,7 +1118,7 @@ void NdpSink::send_ack(simtime_picosec ts, NdpPacket::seq_t ackno, NdpPacket::se
 	    }
 	}
 	break;
-    case SINGLE_PATH:	
+    case SINGLE_PATH:
 	ack = NdpAck::newpkt(_src->_flow, *_route, 0, ackno, _cumulative_ack,
 			     _pull_no, _path_history[_path_hist_index].path_id());
 	break;
@@ -1140,7 +1140,7 @@ void NdpSink::send_nack(simtime_picosec ts, NdpPacket::seq_t ackno, NdpPacket::s
     case SCATTER_RANDOM:
     case PULL_BASED:
 	assert(_paths.size() > 0);
-	nack = NdpNack::newpkt(_src->_flow, *(_paths.at(_crt_path)), 0, ackno, 
+	nack = NdpNack::newpkt(_src->_flow, *(_paths.at(_crt_path)), 0, ackno,
 			       _cumulative_ack, _pull_no,
 			       _path_history[_path_hist_index].path_id());
 	if (_route_strategy == SCATTER_RANDOM) {
@@ -1184,7 +1184,7 @@ int NdpPullPacer::_pull_spacing_cdf_count = 0;
 /* Every NdpSink needs an NdpPullPacer to pace out it's PULL packets.
    Multiple incoming flows at the same receiving node much share a
    single pacer */
-NdpPullPacer::NdpPullPacer(EventList& event, double pull_rate_modifier)  : 
+NdpPullPacer::NdpPullPacer(EventList& event, double pull_rate_modifier)  :
     EventSource(event, "ndp_pacer"), _last_pull(0)
 {
     _packet_drain_time = (simtime_picosec)(Packet::data_packet_size() * (pow(10.0,12.0) * 8) / speedFromMbps((uint64_t)10000))/pull_rate_modifier;
@@ -1192,7 +1192,7 @@ NdpPullPacer::NdpPullPacer(EventList& event, double pull_rate_modifier)  :
     _pacer_no = 0;
 }
 
-NdpPullPacer::NdpPullPacer(EventList& event, char* filename)  : 
+NdpPullPacer::NdpPullPacer(EventList& event, char* filename)  :
     EventSource(event, "ndp_pacer"), _last_pull(0)
 {
     int t;
@@ -1210,7 +1210,7 @@ NdpPullPacer::NdpPullPacer(EventList& event, char* filename)  :
 	    //cout << " Pos " << i << " " << _pull_spacing_cdf[i]<<endl;
 	}
     }
-    
+
     _log_me = false;
     _pacer_no = 0;
 }
@@ -1260,11 +1260,11 @@ void NdpPullPacer::sendPacket(Packet* ack, NdpPacket::seq_t rcvd_pacer_no, NdpSi
 	drain_time = 10*timeFromNs(_pull_spacing_cdf[t])/20;
 	//cout << "Drain time is " << timeAsUs(drain_time);
     }
-	    
+
 
     if (_pull_queue.empty()){
 	simtime_picosec delta = eventlist().now()-_last_pull;
-    
+
 	if (delta >= drain_time){
 	    //send out as long as last NACK/ACK was sent more than packetDrain time ago.
 	    ack->flow().logTraffic(*ack,*this,TrafficLogger::PKT_SEND);
@@ -1318,7 +1318,7 @@ void NdpPullPacer::sendPacket(Packet* ack, NdpPacket::seq_t rcvd_pacer_no, NdpSi
 
     ack->flow().logTraffic(*ack,*this,TrafficLogger::PKT_SEND);
     ack->sendOn();
-    
+
     //   if (_log_me) {
     //       list <Packet*>::iterator i = _waiting_pulls.begin();
     //       cout << "Queue: ";
@@ -1328,7 +1328,7 @@ void NdpPullPacer::sendPacket(Packet* ack, NdpPacket::seq_t rcvd_pacer_no, NdpSi
     // 	      cout << "Nack(" << ((NdpNack*)p)->ackno() << ") ";
     // 	  } else if (p->type() == NDPACK) {
     // 	      cout << "Ack(" << ((NdpAck*)p)->ackno() << ") ";
-    // 	  } 
+    // 	  }
     // 	  i++;
     //       }
     //       cout << endl;
@@ -1372,10 +1372,10 @@ void NdpPullPacer::doNextEvent(){
 	}
     }
     set_pacerno(pkt, _pacer_no++);
-    pkt->sendOn();   
+    pkt->sendOn();
 
     _last_pull = eventlist().now();
-   
+
     simtime_picosec drain_time;
 
     if (_packet_drain_time>0)
@@ -1390,7 +1390,7 @@ void NdpPullPacer::doNextEvent(){
 	eventlist().sourceIsPendingRel(*this,drain_time);//*(0.5+drand()));
     }
     else {
-	//    cout << "Empty pacer queue at " << timeAsMs(eventlist().now()) << endl; 
+	//    cout << "Empty pacer queue at " << timeAsMs(eventlist().now()) << endl;
     }
 }
 
@@ -1400,20 +1400,20 @@ void NdpPullPacer::doNextEvent(){
 ////////////////////////////////////////////////////////////////
 
 NdpRtxTimerScanner::NdpRtxTimerScanner(simtime_picosec scanPeriod, EventList& eventlist)
-  : EventSource(eventlist,"RtxScanner"), 
+  : EventSource(eventlist,"RtxScanner"),
     _scanPeriod(scanPeriod)
 {
     eventlist.sourceIsPendingRel(*this, 0);
 }
 
-void 
+void
 NdpRtxTimerScanner::registerNdp(NdpSrc &tcpsrc)
 {
     _tcps.push_back(&tcpsrc);
 }
 
 void
-NdpRtxTimerScanner::doNextEvent() 
+NdpRtxTimerScanner::doNextEvent()
 {
     simtime_picosec now = eventlist().now();
     tcps_t::iterator i;
