@@ -21,7 +21,8 @@
 #include "connection_matrix.h"
 //#include "vl2_topology.h"
 
-#include "fat_tree_topology.h"
+#include "dumbbell_topology.h"
+// #include "fat_tree_topology.h"
 //#include "oversubscribed_fat_tree_topology.h"
 //#include "multihomed_fat_tree_topology.h"
 //#include "star_topology.h"
@@ -177,9 +178,16 @@ int main(int argc, char **argv) {
     }
 #endif
 
+#ifdef DUMBBELL
+    DumbbellTopology* top = new DumbbellTopology(no_of_nodes, queuesize,
+                                           &logfile, &eventlist,ff,COMPOSITE,0);
+    cout << "DUMBBELL Topology used" << endl;
+#endif
+
 #ifdef FAT_TREE
     FatTreeTopology* top = new FatTreeTopology(no_of_nodes, queuesize,
                                            &logfile, &eventlist,ff,COMPOSITE,0);
+    cout << "FAT_TREE Topology used" << endl;
 #endif
 
 #ifdef OV_FAT_TREE

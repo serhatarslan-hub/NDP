@@ -40,8 +40,8 @@ htsim_ndp: main_ndp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.
 htsim_ndp_permutation: main_ndp_permutation.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
 	$(CC) $(CFLAGS) firstfit.o main_ndp_permutation.o vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_ndp_permutation
 
-htsim_ndp_simple_dumbbell: main_ndp_simple_dumbbell.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
-	$(CC) $(CFLAGS) firstfit.o main_ndp_simple_dumbbell.o vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_ndp_simple_dumbbell
+htsim_ndp_simple_dumbbell: main_ndp_simple_dumbbell.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o dumbbell_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
+	$(CC) $(CFLAGS) firstfit.o main_ndp_simple_dumbbell.o vl2_topology.o fat_tree_topology.o dumbbell_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_ndp_simple_dumbbell
 
 htsim_ndp_random: main_ndp_random.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
 	$(CC) $(CFLAGS) firstfit.o main_ndp_random.o vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_ndp_random
@@ -259,6 +259,9 @@ oversubscribed_fat_tree_topology.o: oversubscribed_fat_tree_topology.cpp oversub
 
 multihomed_fat_tree_topology.o: multihomed_fat_tree_topology.cpp multihomed_fat_tree_topology.h topology.h
 	$(CC) $(INCLUDE) $(CFLAGS) -c multihomed_fat_tree_topology.cpp
+
+dumbbell_topology.o: dumbbell_topology.cpp dumbbell_topology.h topology.h
+	$(CC) $(INCLUDE) $(CFLAGS) -c dumbbell_topology.cpp
 
 clean:
 	rm -f *.o htsim_ndp* htsim_tcp* htsim_dctcp*
