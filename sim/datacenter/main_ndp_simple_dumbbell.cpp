@@ -72,12 +72,12 @@ void print_path(std::ofstream &paths, const Route* rt){
 }
 
 int main(int argc, char **argv) {
-    Packet::set_packet_size(128);
+    Packet::set_packet_size(100);
     // eventlist.setEndtime(timeFromSec(0.201));
     eventlist.setEndtime(timeFromSec(0.004));
     Clock c(timeFromSec(5 / 100.), eventlist);
     int no_of_conns = DEFAULT_NODES, cwnd = 10, no_of_nodes = DEFAULT_NODES;
-    uint64_t flow_size = 100;
+    uint64_t flow_size = 500;
     mem_b queuesize = memFromPkt(DEFAULT_QUEUE_SIZE);
     stringstream filename(ios_base::out);
     RouteStrategy route_strategy = NOT_SET;
