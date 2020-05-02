@@ -36,8 +36,7 @@
 #define PERIODIC 0
 #include "main.h"
 
-//int RTT = 10; // this is per link delay; identical RTT microseconds = 0.02 ms
-uint32_t RTT = 1; // this is per link delay in us; identical RTT microseconds = 0.02 ms
+uint32_t RTT = 2; // in microseconds
 #define DEFAULT_NODES 128
 #define DEFAULT_QUEUE_SIZE 8
 
@@ -61,7 +60,7 @@ void exit_error(char* progr) {
 }
 
 void print_path(std::ofstream &paths, const Route* rt){
-    for (unsigned int i=1;i<rt->size()-1;i+=2){
+    for (unsigned int i=1;i<rt->size();i+=2){
         RandomQueue* q = (RandomQueue*)rt->at(i);
         if (q!=NULL)
         paths << q->str() << " ";
@@ -74,11 +73,12 @@ void print_path(std::ofstream &paths, const Route* rt){
 
 int main(int argc, char **argv) {
     Packet::set_packet_size(100);
-    // eventlist.setEndtime(timeFromSec(0.201));
+
+    uint64_t flow_size = 500;
     eventlist.setEndtime(timeFromSec(0.004));
+
     Clock c(timeFromSec(5 / 100.), eventlist);
     int no_of_conns = DEFAULT_NODES, cwnd = 10, no_of_nodes = DEFAULT_NODES;
-    uint64_t flow_size = 500;
     mem_b queuesize = memFromPkt(DEFAULT_QUEUE_SIZE);
     stringstream filename(ios_base::out);
     RouteStrategy route_strategy = NOT_SET;
@@ -131,8 +131,8 @@ int main(int argc, char **argv) {
 
     cout << "Using subflow count " << subflow_count <<endl;
 
-    cout << "conns " << no_of_conns << endl;
-    cout << "requested nodes " << no_of_nodes << endl;
+    cout << "Conns " << no_of_conns << endl;
+    cout << "Requested nodes " << no_of_nodes << endl;
     cout << "cwnd " << cwnd << endl;
 
     // prepare the loggers
@@ -151,14 +151,13 @@ int main(int argc, char **argv) {
     }
 #endif
 
-
     int tot_subs = 0;
     int cnt_con = 0;
 
     lg = &logfile;
 
     logfile.setStartTime(timeFromSec(0));
-    NdpSinkLoggerSampling sinkLogger = NdpSinkLoggerSampling(timeFromMs(10), eventlist);
+    NdpSinkLoggerSampling sinkLogger = NdpSinkLoggerSampling(timeFromMs(1), eventlist);
     logfile.addLogger(sinkLogger);
     NdpTrafficLogger traffic_logger = NdpTrafficLogger();
     logfile.addLogger(traffic_logger);
@@ -168,7 +167,7 @@ int main(int argc, char **argv) {
     Route* routeout, *routein;
     double extrastarttime;
 
-    NdpRtxTimerScanner ndpRtxScanner(timeFromMs(10), eventlist);
+    NdpRtxTimerScanner ndpRtxScanner(timeFromUs(double(1)), eventlist);
 
     int dest;
 
@@ -181,7 +180,7 @@ int main(int argc, char **argv) {
 #ifdef DUMBBELL
     DumbbellTopology* top = new DumbbellTopology(no_of_nodes, queuesize,
                                            &logfile, &eventlist,ff,COMPOSITE,0);
-    cout << "DUMBBELL Topology used" << endl;
+    cout << "Using DUMBBELL Topology with " << no_of_nodes << " nodes"<< endl;
 #endif
 
 #ifdef FAT_TREE
@@ -210,8 +209,9 @@ int main(int argc, char **argv) {
 #ifdef VL2
     VL2Topology* top = new VL2Topology(&logfile,&eventlist,ff);
 #endif
+
     no_of_nodes = top->no_of_nodes();
-    cout << "actual nodes " << no_of_nodes << endl;
+    cout << "Actual nodes " << no_of_nodes << endl;
 
     vector<const Route*>*** net_paths;
     net_paths = new vector<const Route*>**[no_of_nodes];
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
 
     list <NdpSrc*> ndp_srcs;
     // initialize all sources/sinks
-    NdpSrc::setMinRTO(50000); //increase RTO to avoid spurious retransmits
+    NdpSrc::setMinRTO(RTT*5); //increase RTO to avoid spurious retransmits
     NdpSrc::setRouteStrategy(route_strategy);
     NdpSink::setRouteStrategy(route_strategy);
 
@@ -294,6 +294,7 @@ int main(int argc, char **argv) {
                 ndpSrc->log_me();
                 ndpSrc->setCwnd(cwnd*Packet::data_packet_size());
                 ndp_srcs.push_back(ndpSrc);
+
                 ndpSnk = new NdpSink(eventlist, 1 /*pull at line rate*/);
                 ndpSnk->log_me();
 
@@ -328,10 +329,6 @@ int main(int argc, char **argv) {
                 choice = rand()%net_paths[src][dest]->size();
 #endif
 
-#ifdef STAR
-                choice = 0;
-#endif
-
 #ifdef BCUBE
                 //choice = inter;
 
@@ -356,9 +353,6 @@ int main(int argc, char **argv) {
                 //cout << "Choice "<<choice<<" out of "<<net_paths[src][dest]->size();
                 subflows_chosen.push_back(choice);
 
-                /*if (net_paths[src][dest]->size()==K*K/4 && it_sub<=K/2){
-                int choice2 = rand()%(K/2);*/
-
                 if (choice>=net_paths[src][dest]->size()){
                     printf("Weird path choice %d out of %lu\n",choice,net_paths[src][dest]->size());
                     exit(1);
@@ -369,14 +363,6 @@ int main(int argc, char **argv) {
                     paths << "Route from "<< ntoa(src) << " to " << ntoa(dest) << "  (" << ll << ") -> " ;
                     print_path(paths,net_paths[src][dest]->at(ll));
                 }
-                /*				if (src>=12){
-                assert(net_paths[src][dest]->size()>1);
-                net_paths[src][dest]->erase(net_paths[src][dest]->begin());
-                paths << "Killing entry!" << endl;
-
-                if (choice>=net_paths[src][dest]->size())
-                choice = 0;
-              }*/
 #endif
 
                 routeout = new Route(*(net_paths[src][dest]->at(choice)));
@@ -432,8 +418,8 @@ int main(int argc, char **argv) {
     int pktsize = Packet::data_packet_size();
     logfile.write("# pktsize=" + ntoa(pktsize) + " bytes");
     logfile.write("# subflows=" + ntoa(subflow_count));
-    logfile.write("# hostnicrate = " + ntoa(HOST_NIC) + " pkt/sec");
-    logfile.write("# corelinkrate = " + ntoa(HOST_NIC*CORE_TO_HOST) + " pkt/sec");
+    logfile.write("# hostnicrate = " + ntoa(HOST_NIC) + " Mbps");
+    // logfile.write("# corelinkrate = " + ntoa(HOST_NIC*CORE_TO_HOST) + " pkt/sec");
     //logfile.write("# buffer = " + ntoa((double) (queues_na_ni[0][1]->_maxsize) / ((double) pktsize)) + " pkt");
     double rtt = timeAsSec(timeFromUs(RTT));
     logfile.write("# rtt =" + ntoa(rtt));
@@ -444,10 +430,9 @@ int main(int argc, char **argv) {
     // GO!
     while (eventlist.doNextEvent()) {
     }
-
     cout << "Done" << endl;
+
     list <const Route*>::iterator rt_i;
-    int counts[10]; int hop;
     for (rt_i = routes.begin(); rt_i != routes.end(); rt_i++) {
         const Route* r = (*rt_i);
         //print_route(*r);
@@ -456,17 +441,19 @@ int main(int argc, char **argv) {
             PacketSink *ps = r->at(i);
             CompositeQueue *q = dynamic_cast<CompositeQueue*>(ps);
             if (q == 0) {
-                cout << ps->nodename() << endl;
+                cout << "\t" << ps->nodename() << endl;
             } else {
-                cout << q->nodename() << " id=" << q->id << " " << q->num_packets() << "pkts "
+                cout << "\t" <<  q->nodename() << " id=" << q->id << " " << q->num_packets() << "pkts "
                 << q->num_headers() << "hdrs " << q->num_acks() << "acks " << q->num_nacks() << "nacks " << q->num_stripped() << "stripped"
                 << endl;
             }
         }
         cout << endl;
     }
+
+    int counts[10]; int hop;
     for (int i = 0; i < 10; i++)
-    counts[i] = 0;
+        counts[i] = 0;
     for (rt_i = routes.begin(); rt_i != routes.end(); rt_i++) {
         const Route* r = (*rt_i);
         //print_route(*r);
@@ -481,17 +468,16 @@ int main(int argc, char **argv) {
                 hop++;
             }
         }
-        cout << endl;
     }
-
+    cout << endl;
     for (int i = 0; i < 10; i++)
-    cout << "Hop " << i << " Count " << counts[i] << endl;
+        cout << "Hop " << i << " Count " << counts[i] << endl;
+    cout << endl;
+
     list <NdpSrc*>::iterator src_i;
     for (src_i = ndp_srcs.begin(); src_i != ndp_srcs.end(); src_i++) {
-        cout << "Src, sent: " << (*src_i)->_packets_sent << "[new: " << (*src_i)->_new_packets_sent << " rtx: " << (*src_i)->_rtx_packets_sent << "] nacks: " << (*src_i)->_nacks_received << " pulls: " << (*src_i)->_pulls_received << " paths: " << (*src_i)->_paths.size() << endl;
-    }
-    for (src_i = ndp_srcs.begin(); src_i != ndp_srcs.end(); src_i++) {
         (*src_i)->print_stats();
+        cout << "Src, sent: " << (*src_i)->_packets_sent << "[new: " << (*src_i)->_new_packets_sent << " rtx: " << (*src_i)->_rtx_packets_sent << "] nacks: " << (*src_i)->_nacks_received << " pulls: " << (*src_i)->_pulls_received << " paths: " << (*src_i)->_paths.size() << endl;
     }
     /*
     uint64_t total_rtt = 0;

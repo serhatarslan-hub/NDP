@@ -13,15 +13,6 @@
 #include "switch.h"
 #include <ostream>
 
-//#define N K*K*K/4
-
-#define HOST_POD_SWITCH(src) (2*src/K)
-//#define HOST_POD_ID(src) src%NSRV
-#define HOST_POD(src) (src/NC)
-
-#define MIN_POD_ID(pod_id) (pod_id*K/2)
-#define MAX_POD_ID(pod_id) ((pod_id+1)*K/2-1)
-
 #ifndef QT
 #define QT
 typedef enum {RANDOM, ECN, COMPOSITE, CTRL_PRIO, LOSSLESS, LOSSLESS_INPUT, LOSSLESS_INPUT_ECN} queue_type;
@@ -29,38 +20,30 @@ typedef enum {RANDOM, ECN, COMPOSITE, CTRL_PRIO, LOSSLESS, LOSSLESS_INPUT, LOSSL
 
 class DumbbellTopology: public Topology{
  public:
-/*
-  Pipe * pipes_nc_nup[NC][NK];
-  Pipe * pipes_nup_nlp[NK][NK];
-  Pipe * pipes_nlp_ns[NK][NSRV];
-  Queue * queues_nc_nup[NC][NK];
-  Queue * queues_nup_nlp[NK][NK];
-  Queue * queues_nlp_ns[NK][NSRV];
+  // vector <Switch*> switches_lp;
+  // vector <Switch*> switches_up;
+  // vector <Switch*> switches_c;
+  Switch * the_switch;
 
-  Pipe * pipes_nup_nc[NK][NC];
-  Pipe * pipes_nlp_nup[NK][NK];
-  Pipe * pipes_ns_nlp[NSRV][NK];
-  Queue * queues_nup_nc[NK][NC];
-  Queue * queues_nlp_nup[NK][NK];
-  Queue * queues_ns_nlp[NSRV][NK];
-*/
-  vector <Switch*> switches_lp;
-  vector <Switch*> switches_up;
-  vector <Switch*> switches_c;
+  // vector< vector<Pipe*> > pipes_nc_nup;
+  // vector< vector<Pipe*> > pipes_nup_nlp;
+  // vector< vector<Pipe*> > pipes_nlp_ns;
+  vector<Pipe*> pipes_nsw_nhost;
 
-  vector< vector<Pipe*> > pipes_nc_nup;
-  vector< vector<Pipe*> > pipes_nup_nlp;
-  vector< vector<Pipe*> > pipes_nlp_ns;
-  vector< vector<Queue*> > queues_nc_nup;
-  vector< vector<Queue*> > queues_nup_nlp;
-  vector< vector<Queue*> > queues_nlp_ns;
+  // vector< vector<Queue*> > queues_nc_nup;
+  // vector< vector<Queue*> > queues_nup_nlp;
+  // vector< vector<Queue*> > queues_nlp_ns;
+  vector<Queue*> queues_nsw_nhost;
 
-  vector< vector<Pipe*> > pipes_nup_nc;
-  vector< vector<Pipe*> > pipes_nlp_nup;
-  vector< vector<Pipe*> > pipes_ns_nlp;
-  vector< vector<Queue*> > queues_nup_nc;
-  vector< vector<Queue*> > queues_nlp_nup;
-  vector< vector<Queue*> > queues_ns_nlp;
+  // vector< vector<Pipe*> > pipes_nup_nc;
+  // vector< vector<Pipe*> > pipes_nlp_nup;
+  // vector< vector<Pipe*> > pipes_ns_nlp;
+  vector<Pipe*> pipes_nhost_nsw;
+
+  // vector< vector<Queue*> > queues_nup_nc;
+  // vector< vector<Queue*> > queues_nlp_nup;
+  // vector< vector<Queue*> > queues_ns_nlp;
+  vector<Queue*> queues_nhost_nsw;
 
   FirstFit* ff;
   Logfile* logfile;
@@ -85,12 +68,12 @@ class DumbbellTopology: public Topology{
   void check_non_null(Route* rt);
  private:
   map<Queue*,int> _link_usage;
-  int find_lp_switch(Queue* queue);
-  int find_up_switch(Queue* queue);
-  int find_core_switch(Queue* queue);
+  // int find_lp_switch(Queue* queue);
+  // int find_up_switch(Queue* queue);
+  // int find_core_switch(Queue* queue);
   int find_destination(Queue* queue);
   void set_params(int no_of_nodes);
-  int K, NK, NC, NSRV;
+  // int K, NK, NC, NSRV;
   int _no_of_nodes;
   mem_b _queuesize;
 };
