@@ -79,7 +79,11 @@ int main(int argc, char **argv) {
 
     Clock c(timeFromSec(5 / 100.), eventlist);
     int no_of_conns = DEFAULT_NODES, cwnd = 10, no_of_nodes = DEFAULT_NODES;
+
     mem_b queuesize = memFromPkt(DEFAULT_QUEUE_SIZE);
+    // Drop every drop_period-th packet
+    uint64_t drop_period = 4; // Only valid for composite queues at the moment
+
     stringstream filename(ios_base::out);
     RouteStrategy route_strategy = NOT_SET;
 
@@ -179,7 +183,8 @@ int main(int argc, char **argv) {
 
 #ifdef DUMBBELL
     DumbbellTopology* top = new DumbbellTopology(no_of_nodes, queuesize,
-                                           &logfile, &eventlist,ff,COMPOSITE,0);
+                                                  &logfile, &eventlist,ff,
+                                                  COMPOSITE, drop_period, 0);
     cout << "Using DUMBBELL Topology with " << no_of_nodes << " nodes"<< endl;
 #endif
 

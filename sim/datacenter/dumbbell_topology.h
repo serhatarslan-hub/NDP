@@ -20,29 +20,14 @@ typedef enum {RANDOM, ECN, COMPOSITE, CTRL_PRIO, LOSSLESS, LOSSLESS_INPUT, LOSSL
 
 class DumbbellTopology: public Topology{
  public:
-  // vector <Switch*> switches_lp;
-  // vector <Switch*> switches_up;
-  // vector <Switch*> switches_c;
   Switch * the_switch;
 
-  // vector< vector<Pipe*> > pipes_nc_nup;
-  // vector< vector<Pipe*> > pipes_nup_nlp;
-  // vector< vector<Pipe*> > pipes_nlp_ns;
   vector<Pipe*> pipes_nsw_nhost;
 
-  // vector< vector<Queue*> > queues_nc_nup;
-  // vector< vector<Queue*> > queues_nup_nlp;
-  // vector< vector<Queue*> > queues_nlp_ns;
   vector<Queue*> queues_nsw_nhost;
 
-  // vector< vector<Pipe*> > pipes_nup_nc;
-  // vector< vector<Pipe*> > pipes_nlp_nup;
-  // vector< vector<Pipe*> > pipes_ns_nlp;
   vector<Pipe*> pipes_nhost_nsw;
 
-  // vector< vector<Queue*> > queues_nup_nc;
-  // vector< vector<Queue*> > queues_nlp_nup;
-  // vector< vector<Queue*> > queues_ns_nlp;
   vector<Queue*> queues_nhost_nsw;
 
   FirstFit* ff;
@@ -53,6 +38,7 @@ class DumbbellTopology: public Topology{
 
   DumbbellTopology(int no_of_nodes, mem_b queuesize, Logfile* log,EventList* ev,FirstFit* f, queue_type q);
   DumbbellTopology(int no_of_nodes, mem_b queuesize, Logfile* log,EventList* ev,FirstFit* f, queue_type q, int fail);
+  DumbbellTopology(int no_of_nodes, mem_b queuesize, Logfile* log,EventList* ev,FirstFit* f, queue_type q, uint64_t drop_period, int fail);
 
   void init_network();
   virtual vector<const Route*>* get_paths(int src, int dest);
@@ -68,14 +54,13 @@ class DumbbellTopology: public Topology{
   void check_non_null(Route* rt);
  private:
   map<Queue*,int> _link_usage;
-  // int find_lp_switch(Queue* queue);
-  // int find_up_switch(Queue* queue);
-  // int find_core_switch(Queue* queue);
+
   int find_destination(Queue* queue);
   void set_params(int no_of_nodes);
-  // int K, NK, NC, NSRV;
+
   int _no_of_nodes;
   mem_b _queuesize;
+  uint64_t _drop_period; // Drop every _drop_period-th packet in each queue
 };
 
 #endif

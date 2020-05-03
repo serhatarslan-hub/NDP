@@ -1,9 +1,9 @@
-// -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-        
+// -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
 #ifndef COMPOSITE_QUEUE_H
 #define COMPOSITE_QUEUE_H
 
 /*
- * A composite queue that transforms packets into headers when there is no space and services headers with priority. 
+ * A composite queue that transforms packets into headers when there is no space and services headers with priority.
  */
 
 #define QUEUE_INVALID 0
@@ -20,7 +20,9 @@
 
 class CompositeQueue : public Queue {
  public:
-    CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, 
+    CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
+		   EventList &eventlist, QueueLogger* logger);
+    CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, uint64_t drop_period,
 		   EventList &eventlist, QueueLogger* logger);
     virtual void receivePacket(Packet& pkt);
     virtual void doNextEvent();
@@ -35,7 +37,7 @@ class CompositeQueue : public Queue {
     int num_pulls() const { return _num_pulls;}
     virtual mem_b queuesize();
     virtual void setName(const string& name) {
-	Logged::setName(name); 
+	Logged::setName(name);
 	_nodename += name;
     }
     virtual const string& nodename() { return _nodename; }
@@ -47,6 +49,8 @@ class CompositeQueue : public Queue {
     int _num_pulls;
     int _num_stripped; // count of packets we stripped
     int _num_bounced;  // count of packets we bounced
+    uint64_t _drop_period; // Drop every _drop_period-th packet
+    int _accept_counter; // Used to determine whether to drop data packets
 
  protected:
     // Mechanism

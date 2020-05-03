@@ -26,6 +26,7 @@ DumbbellTopology::DumbbellTopology(int no_of_nodes, mem_b queuesize, Logfile* lg
 				 EventList* ev,FirstFit * fit,queue_type q){
     _queuesize = queuesize;
 		_no_of_nodes = no_of_nodes;
+		_drop_period = 0;
     logfile = lg;
     eventlist = ev;
     ff = fit;
@@ -41,6 +42,23 @@ DumbbellTopology::DumbbellTopology(int no_of_nodes, mem_b queuesize, Logfile* lg
 				 EventList* ev,FirstFit * fit, queue_type q, int fail){
     _queuesize = queuesize;
 		_no_of_nodes = no_of_nodes;
+		_drop_period = 0;
+    logfile = lg;
+    eventlist = ev;
+    ff = fit;
+		qt = q;
+    failed_links = fail;
+
+    set_params(no_of_nodes);
+
+    init_network();
+}
+
+DumbbellTopology::DumbbellTopology(int no_of_nodes, mem_b queuesize, Logfile* lg,
+				 EventList* ev,FirstFit * fit, queue_type q, uint64_t drop_period, int fail){
+    _queuesize = queuesize;
+		_no_of_nodes = no_of_nodes;
+		_drop_period = drop_period;
     logfile = lg;
     eventlist = ev;
     ff = fit;
@@ -91,7 +109,7 @@ Queue* DumbbellTopology::alloc_queue(QueueLogger* queueLogger, uint64_t speed, m
     if (qt==RANDOM)
 	return new RandomQueue(speedFromMbps(speed), memFromPkt(SWITCH_BUFFER + RANDOM_BUFFER), *eventlist, queueLogger, memFromPkt(RANDOM_BUFFER));
     else if (qt==COMPOSITE)
-	return new CompositeQueue(speedFromMbps(speed), queuesize, *eventlist, queueLogger);
+	return new CompositeQueue(speedFromMbps(speed), queuesize, _drop_period, *eventlist, queueLogger);
     else if (qt==CTRL_PRIO)
 	return new CtrlPrioQueue(speedFromMbps(speed), queuesize, *eventlist, queueLogger);
     else if (qt==ECN)

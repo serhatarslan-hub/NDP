@@ -21,6 +21,35 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList& 
   _num_stripped = 0;
   _num_bounced = 0;
 
+	_drop_period = 0;
+	_accept_counter = 0;
+
+  _queuesize_high = _queuesize_low = 0;
+  _serv = QUEUE_INVALID;
+  stringstream ss;
+  ss << "compqueue(" << bitrate/1000000 << "Mb/s," << maxsize << "bytes)";
+  _nodename = ss.str();
+}
+
+CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, uint64_t drop_period,
+																EventList& eventlist, QueueLogger* logger)
+  : Queue(bitrate, maxsize, eventlist, logger)
+{
+  _ratio_high = 10;
+  _ratio_low = 1;
+  _crt = 0;
+  _num_headers = 0;
+  _num_packets = 0;
+  _num_acks = 0;
+  _num_nacks = 0;
+  _num_pulls = 0;
+  _num_drops = 0;
+  _num_stripped = 0;
+  _num_bounced = 0;
+
+	_drop_period = drop_period;
+	_accept_counter = 0;
+
   _queuesize_high = _queuesize_low = 0;
   _serv = QUEUE_INVALID;
   stringstream ss;
@@ -110,7 +139,13 @@ CompositeQueue::receivePacket(Packet& pkt)
 {
     pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_ARRIVE);
     if (!pkt.header_only()){
-			if (_queuesize_low+pkt.size() <= _maxsize  && drand()<0.955) {
+			_accept_counter++;
+			// if (_queuesize_low+pkt.size() <= _maxsize  && drand()<0.5) {
+			// if (_queuesize_low+pkt.size() <= _maxsize  && drand()<0.955) {
+			if ( _queuesize_low+pkt.size() <= _maxsize  &&
+					 ( ( _drop_period==0 && drand()<0.5) || ( _drop_period!=0 && (_accept_counter) % _drop_period != 0 )))
+			{
+				
 		    //regular packet; don't drop the arriving packet
 
 		    // we are here because either the queue isn't full or,
