@@ -74,7 +74,7 @@ void print_path(std::ofstream &paths, const Route* rt){
 int main(int argc, char **argv) {
     Packet::set_packet_size(100);
 
-    uint64_t flow_size = 500;
+    uint64_t flow_size = 1100;
     eventlist.setEndtime(timeFromSec(0.004));
 
     Clock c(timeFromSec(5 / 100.), eventlist);
